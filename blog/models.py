@@ -7,10 +7,35 @@ from django.db.models import Count
 class PostQuerySet(models.QuerySet):
 
     def year(self, year):
-        posts_at_year = self.filter(published_at__year=year).order_by(
-            'published_at'
-        )
-        return posts_at_year
+        return self.filter(published_at__year=year).order_by('published_at')
+
+    def popular(self):
+        return self.annotate(likes_count=Count(
+        'likes', distinct=True)
+        ).order_by('-likes_count')
+
+    def fetch_with_comments_count(self):
+        """
+        Почему не annotate?
+        annotate создаёт отдельный QuerySet. Если мы уже отобрали посты
+        (например popular()[:5]), annotate может сломать порядок и потребует
+        новый запрос. Этот метод делает два запроса:
+        1. Получает ids уже выбранных постов
+        2. Достаёт количество комментариев
+        Возвращает список объектов Post, у которых проставлен
+        post.comments_count
+        """
+        ids = [post.id for post in self]
+        comments = Post.objects.filter(id__in=ids).annotate(
+            comments_count=Count('comments', distinct=True)
+        ).values_list('id', 'comments_count')
+
+        count_for_id = dict(comments)
+
+        for post in self:
+            post.comments_count = count_for_id[post.id]
+
+        return list(self)
 
 
 class Post(models.Model):
