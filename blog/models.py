@@ -26,6 +26,7 @@ class PostQuerySet(models.QuerySet):
         post.comments_count
         """
         ids = [post.id for post in self]
+
         comments = Post.objects.filter(id__in=ids).annotate(
             comments_count=Count('comments', distinct=True)
         ).values_list('id', 'comments_count')
@@ -33,7 +34,7 @@ class PostQuerySet(models.QuerySet):
         count_for_id = dict(comments)
 
         for post in self:
-            post.comments_count = count_for_id[post.id]
+            post.comments_count = count_for_id.get(post.id, 0)
 
         return list(self)
 
