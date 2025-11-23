@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from blog.models import Comment, Post, Tag
 from django.db.models import Count
+from django.db.models import Prefetch
 
 def get_related_posts_count(tag):
     return tag.posts.count()
@@ -45,19 +46,22 @@ def serialize_post_optimized(post):
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
-        'tags': [serialize_tag(tag) for tag in post.tags.all()],
+        'tags': [serialize_tag_optimized(tag) for tag in post.tags.all()],
         'first_tag_title': post.tags.all()[0].title,
     }
 
 
 def index(request):
 
-    most_popular_posts = Post.objects.popular() \
-                       .prefetch_related('author', 'tags')[:5] \
+    tags_with_count = Tag.objects.annotate(posts_count=Count('posts'))
+    prefetch_tags = Prefetch('tags', queryset=tags_with_count)
+
+    most_popular_posts = Post.objects.popular()[:5] \
+                       .prefetch_related('author', prefetch_tags) \
                        .fetch_with_comments_count()
 
-    most_fresh_posts = Post.objects.order_by() \
-                        .prefetch_related('author', 'tags')[:5] \
+    most_fresh_posts = Post.objects.order_by()[:5] \
+                        .prefetch_related('author', prefetch_tags) \
                         .fetch_with_comments_count()
 
     most_popular_tags = Tag.objects.annotate(
