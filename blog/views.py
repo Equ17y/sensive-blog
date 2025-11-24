@@ -4,9 +4,6 @@ from django.db.models import Count
 from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
 
-def get_related_posts_count(tag):
-    return tag.posts.count()
-
 
 def serialize_tag(tag):
     return {
@@ -81,7 +78,6 @@ def post_detail(request, slug):
             'author': comment.author.username,
         })
 
-    likes = post.likes.all()
 
     serialized_post = {
         'title': post.title,
