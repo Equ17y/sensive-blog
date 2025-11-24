@@ -72,7 +72,7 @@ def post_detail(request, slug):
 
     post.comments_count = post.comments.count()
 
-    comments = Comment.objects.filter(post=post).select_related('author')
+    comments = post.comments.select_related('author')
     serialized_comments = []
     for comment in comments:
         serialized_comments.append({
