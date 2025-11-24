@@ -80,6 +80,9 @@ class TagQuerySet(models.QuerySet):
             '-posts_count'
     )
 
+    def with_posts_count(self):
+        return self.annotate(posts_count=Count('posts'))
+
 
 class Tag(models.Model):
     title = models.CharField('Тег', max_length=20, unique=True)
