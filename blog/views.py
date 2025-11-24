@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from blog.models import Comment, Post, Tag
 from django.db.models import Count
 from django.db.models import Prefetch
@@ -35,7 +34,7 @@ def index(request):
                        .prefetch_related('author', prefetch_tags) \
                        .fetch_with_comments_count()
 
-    most_fresh_posts = Post.objects.order_by()[:5] \
+    most_fresh_posts = Post.objects.order_by('-published_at')[:5] \
                         .prefetch_related('author', prefetch_tags) \
                         .fetch_with_comments_count()
 
@@ -122,15 +121,8 @@ def tag_filter(request, tag_title):
                        .prefetch_related('author', prefetch_tags)[:5]\
                        .fetch_with_comments_count()
 
-    related_posts = tag.posts.prefetch_related('author', prefetch_tags)[:20]
-    related_posts_ids = [post.id for post in related_posts]
-    comments_data = Post.objects.filter(id__in=related_posts_ids) \
-        .annotate(comments_count=Count('comments')) \
-        .values_list('id', 'comments_count')
-    comments_map = dict(comments_data)
-
-    for post in related_posts:
-        post.comments_count = comments_map.get(post.id, 0)
+    related_posts = tag.posts.prefetch_related('author', prefetch_tags)[:20] \
+        .annotate(comments_count=Count('comments'))
 
     context = {
         'tag': tag.title,
